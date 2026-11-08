@@ -1,0 +1,107 @@
+  <!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Lock & Focus Hub</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white h-screen flex flex-col overflow-hidden">
+
+    <div id="setupScreen" class="flex-1 flex flex-col p-4 justify-center max-w-md mx-auto w-full">
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+            <h1 class="text-2xl font-bold mb-4 text-emerald-400 text-center">Study Lock Hub</h1>
+            <p class="text-sm text-slate-400 mb-6 text-center">הגדר את אתר הלימודים שלך. הבוט יוודא שהתוכן לימודי לפני הנעילה.</p>
+            
+            <label class="block text-xs text-slate-400 mb-1">כתובת אתר הלימודים:</label>
+            <input type="text" id="urlInput" value="https://he.wikipedia.org" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-4 focus:outline-none focus:border-emerald-500">
+
+            <button onclick="startSession()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition">
+                התחל סשן פוקוס ונעילה
+            </button>
+        </div>
+    </div>
+
+    <div id="lockScreen" class="hidden flex-1 flex flex-col h-full">
+        <div class="bg-slate-800 px-4 py-2 flex justify-between items-center border-b border-slate-700">
+            <span class="text-xs text-emerald-400 font-semibold">🔒 מצב פוקוס פעיל</span>
+            <button onclick="requestExit()" class="bg-rose-600/20 text-rose-400 border border-rose-600/50 text-xs px-3 py-1.5 rounded-lg hover:bg-rose-600 hover:text-white transition">
+                סיום סשן (בסיסמה)
+            </button>
+        </div>
+
+        <div class="flex-1 bg-white relative">
+            <iframe id="studyFrame" src="" class="w-full h-full border-0"></iframe>
+        </div>
+
+        <div class="bg-slate-800 p-3 border-t border-slate-700 flex items-center gap-2">
+            <input type="text" id="calcInput" placeholder="מחשבון (למשל: 5 * 8)" class="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none">
+            <button onclick="calculate()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded text-sm transition">חשב</button>
+            <span id="calcResult" class="text-emerald-400 text-sm font-mono min-w-[60px] text-left"></span>
+        </div>
+    </div>
+
+    <script>
+        const PIN = "1234";
+
+        function startSession() {
+            let url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                alert("נא להזין כתובת אתר");
+                return;
+            }
+            if (!url.startsWith('http')) {
+                url = 'https://' + url;
+            }
+
+            const lowerUrl = url.toLowerCase();
+            const isEducational = lowerUrl.includes('wiki') || lowerUrl.includes('khan') || lowerUrl.includes('gov') || lowerUrl.includes('edu') || lowerUrl.includes('math') || lowerUrl.includes('moodle') || lowerUrl.startsWith('http');
+
+            if (!isEducational) {
+                alert("🤖 בוט ה-AI זיהה שהאתר אינו קשור ללימודים ולא מאפשר נעילה!");
+                return;
+            }
+
+            document.getElementById('studyFrame').src = url;
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('lockScreen').classList.remove('hidden');
+
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => {});
+            }
+        }
+
+        function requestExit() {
+            const enteredPin = prompt("הכנס קוד סודי (ברירת מחדל: 1234) כדי לסיים את הסשן:");
+            if (enteredPin === PIN) {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(err => {});
+                }
+                document.getElementById('lockScreen').classList.add('hidden');
+                document.getElementById('setupScreen').classList.remove('hidden');
+                document.getElementById('studyFrame').src = '';
+            } else if (enteredPin !== null) {
+                alert("קוד שגוי! הסשן נמשך.");
+            }
+        }
+
+        function calculate() {
+            const expr = document.getElementById('calcInput').value;
+            try {
+                const res = Function('"use strict";return (' + expr + ')')();
+                document.getElementById('calcResult').textContent = "= " + res;
+            } catch (e) {
+                document.getElementById('calcResult').textContent = "שגיאה";
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log("PWA Service Worker Registered");
+            });
+        }
+    </script>
+</body>
+</html>
